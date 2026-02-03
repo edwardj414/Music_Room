@@ -2,6 +2,8 @@ import random
 import string
 import base64
 import json
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 from django.utils import timezone
 from datetime import timedelta
 from cryptography.fernet import Fernet
@@ -29,4 +31,19 @@ def decrypt_user_data(token):
             return None
         return data
     except Exception:
+        return None
+
+def send_sendgrid_otp(recipient_email, otp):
+    message = Mail(
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to_emails=recipient_email,
+        subject='Your Security Verification Code',
+        plain_text_content=f'Your OTP is {otp}. It expires in 5 minutes.'
+    )
+    try:
+        sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+        response = sg.send(message)
+        return response.status_code
+    except Exception as e:
+        print(f"SendGrid Error: {str(e)}")
         return None

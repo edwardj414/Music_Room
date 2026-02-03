@@ -6,13 +6,10 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-from sqlalchemy.sql.functions import user
-
 from .models import CusUser, OTP, BlacklistedAESToken
 from .serializers import SignupSerializer
 from .serializers import CheckPassword
-from .utils import generte_otp, encrypt_user_data,decrypt_user_data
+from .utils import generte_otp, encrypt_user_data,decrypt_user_data, send_sendgrid_otp
 
 
 class SignUp(APIView):
@@ -107,8 +104,9 @@ class GenerateOTP(APIView):
             OTP.objects.filter(user=user).delete()
             otp = generte_otp()
             OTP.objects.create(user=user, code=otp)
+            email_otp = send_sendgrid_otp(user.email, otp)
             return Response({"message": "OTP Created and will expire in 5 minutes",
-                             "code" :otp},
+                             "code" :otp, "email": email_otp},
                               status=status.HTTP_201_CREATED)
         except CusUser.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
@@ -138,6 +136,30 @@ class OTPVerify(APIView):
                 return Response("OTP not matched", status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"message":"Something Went Wrong","data":str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class DecryptData(APIView):
